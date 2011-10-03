@@ -201,15 +201,15 @@ object Path {
   def apply(parent: HPath, child: HPath) = new Path(new HPath(parent, child))
   def apply(uri: URI) = new Path(new HPath(uri))
 
-  var BUFFER_SIZE = 64 * 1024
-  var HEAD_DEFAULT_SIZE = 10
-  var TAIL_DEFAULT_SIZE = 10
-
   var conf = new Configuration
   def fs = FileSystem.get(conf)
   def home = Path(fs.getHomeDirectory())
   def work = Path(fs.getWorkingDirectory())
   def work_=(w: Path) = fs.setWorkingDirectory(w.hpath)
+
+  var BUFFER_SIZE = conf.getInt("io.file.buffer.size", 4096)
+  var HEAD_DEFAULT_SIZE = 10
+  var TAIL_DEFAULT_SIZE = 10
 }
 
 trait LocalPath {
