@@ -149,16 +149,24 @@ class Path(val hpath: HPath) extends Comparable[Path] {
   }
 
   def cd(dir: String): Path = {
-    rel(dir) match {
+    resolve(dir) match {
       case d if d.isDirectory => d
       case f if f.isFile => throw new FileNotFoundException("not directory")
       case _ => throw new FileNotFoundException()
     }
   }
-  def rel(name: String): Path = globStatus(name) match {
+  def file(name: String): Path = {
+    resolve(name) match {
+      case d if d.isDirectory => throw new FileNotFoundException("not file")
+      case f if f.isFile => f
+      case _ => throw new FileNotFoundException()
+    }
+  }
+  def resolve(name: String): Path = globStatus(name) match {
     case Nil => Path(hpath, name)
     case seq => Path(seq.head.getPath())
   }
+  def rel(name: String) = Path(hpath, name)
 
   def listStatus: Seq[FileStatus] = fs.listStatus(hpath) match {
     case null => Seq()
