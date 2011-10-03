@@ -22,7 +22,7 @@ class Path(val hpath: HPath) extends Comparable[Path] {
   def isFile = fs.isFile(hpath)
   def isLocal = uri.getScheme() == "file"
   def exists = fs.exists(hpath)
-  def depath = hpath.depth()
+  def depth = hpath.depth()
 
   override def equals(that: Any) = that match {
     case that: Path => hpath.equals(that.hpath)
