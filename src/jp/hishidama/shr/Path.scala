@@ -43,10 +43,10 @@ class Path(val hpath: HPath) extends Comparable[Path] {
     globStatus(name).foreach(f => fs.delete(f.getPath()))
   }
 
-  def la: Unit = list.foreach(println)
-  def la(dir: String): Unit = list(dir).foreach(println)
-  def ls: Unit = list.filterNot(_.name.startsWith(".")).foreach(println)
-  def ls(dir: String): Unit = list(dir).filterNot(_.name.startsWith(".")).foreach(println)
+  def la = { list.foreach(println); this }
+  def la(dir: String) = { list(dir).foreach(println); this }
+  def ls = { list.filterNot(_.name.startsWith(".")).foreach(println); this }
+  def ls(dir: String) = { list(dir).filterNot(_.name.startsWith(".")).foreach(println); this }
   def list: Seq[Path] = listStatus.map(fs => Path(fs.getPath()))
   def list(dir: String): Seq[Path] = globStatus(dir).map(fs => Path(fs.getPath()))
 
