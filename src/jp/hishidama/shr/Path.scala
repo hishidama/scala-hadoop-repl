@@ -57,13 +57,15 @@ class Path(val hpath: HPath) extends Comparable[Path] {
       r.foreach(println)
     } finally r.close()
   }
-  def head(size: Int = 10): Unit = {
+  def head: Unit = head(Path.HEAD_DEFAULT_SIZE)
+  def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
     val r = lines()
     try {
       r.take(size).foreach(println)
     } finally r.close()
   }
-  def tail(size: Int = 10): Unit = {
+  def tail: Unit = tail(Path.TAIL_DEFAULT_SIZE)
+  def tail(size: Int = Path.TAIL_DEFAULT_SIZE): Unit = {
     val r = lines()
     try {
       r.toIterable.takeRight(size).foreach(println)
@@ -200,6 +202,8 @@ object Path {
   def apply(uri: URI) = new Path(new HPath(uri))
 
   var BUFFER_SIZE = 64 * 1024
+  var HEAD_DEFAULT_SIZE = 10
+  var TAIL_DEFAULT_SIZE = 10
 
   var conf = new Configuration
   def fs = FileSystem.get(conf)
