@@ -52,24 +52,21 @@ class Path(val hpath: HPath) extends Comparable[Path] {
 
   def show: Unit = cat
   def cat: Unit = {
-    val r = lines()
-    try {
+    using(lines()) { r =>
       r.foreach(println)
-    } finally r.close()
+    }
   }
   def head: Unit = head(Path.HEAD_DEFAULT_SIZE)
   def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
-    val r = lines()
-    try {
+    using(lines()) { r =>
       r.take(size).foreach(println)
-    } finally r.close()
+    }
   }
   def tail: Unit = tail(Path.TAIL_DEFAULT_SIZE)
   def tail(size: Int = Path.TAIL_DEFAULT_SIZE): Unit = {
-    val r = lines()
-    try {
+    using(lines()) { r =>
       r.toIterable.takeRight(size).foreach(println)
-    } finally r.close()
+    }
   }
   def lines() = openReader()
   def openReader(encoding: String = "UTF-8"): Iterator[String] with Closeable = {
@@ -95,12 +92,9 @@ class Path(val hpath: HPath) extends Comparable[Path] {
   }
 
   def #<(s: String): Unit = {
-    val bw = openWriter()
-    try {
+    using(openWriter()) { bw =>
       bw.write(s)
       //bw.write('\n')
-    } finally {
-      bw.close()
     }
   }
   def openWriter(encoding: String = "UTF-8"): BufferedWriter = {
@@ -132,20 +126,18 @@ class Path(val hpath: HPath) extends Comparable[Path] {
       case Seq(p) => p.copy(dst); 1
       case ps =>
         val dp = if (dst.isDirectory) Path(dst.hpath, ps.head.name) else dst
-        val os = dp.openOutputStream()
-        try {
+        using(dp.openOutputStream()) { os =>
           val buf = new Array[Byte](Path.BUFFER_SIZE)
           ps.foreach { p =>
-            val is = fs.open(p)
-            try {
+            using(fs.open(p)) { is =>
               var len = 0
               do {
                 len = is.read(buf)
                 if (len > 0) os.write(buf, 0, len)
               } while (len > 0)
-            } finally is.close()
+            }
           }
-        } finally os.close()
+        }
         ps.size
     }
   }
