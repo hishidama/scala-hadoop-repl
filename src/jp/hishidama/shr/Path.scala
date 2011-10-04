@@ -80,8 +80,8 @@ class Path(val hpath: HPath) extends Comparable[Path] {
         try { is.close() } catch { case _ => }
         throw e
     }
-    new Iterator[String] with Closeable {
-      var s = br.readLine()
+    class ReaderIterator extends Iterator[String] with Closeable {
+      private var s = br.readLine()
       def hasNext: Boolean = s != null
       def next: String = {
         val r = s
@@ -91,6 +91,7 @@ class Path(val hpath: HPath) extends Comparable[Path] {
       }
       def close() = br.close()
     }
+    new ReaderIterator()
   }
 
   def #<(s: String): Unit = {
