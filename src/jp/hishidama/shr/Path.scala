@@ -47,8 +47,8 @@ class Path(val hpath: HPath) extends Comparable[Path] {
   def la(dir: String) = { listAll(dir).foreach(println); this }
   def ls = { list.foreach(println); this }
   def ls(dir: String) = { list(dir).foreach(println); this }
-  def list: Seq[Path] = listStatus.map(fs => Path(fs.getPath())).filterNot(_.name.startsWith("."))
-  def list(dir: String): Seq[Path] = globStatus(dir).map(fs => Path(fs.getPath())).filterNot(_.name.startsWith("."))
+  def list: Seq[Path] = listAll.filterNot(_.name.startsWith("."))
+  def list(dir: String): Seq[Path] = listAll(dir).filterNot(_.name.startsWith("."))
   def listAll: Seq[Path] = listStatus.map(fs => Path(fs.getPath()))
   def listAll(dir: String): Seq[Path] = globStatus(dir).map(fs => Path(fs.getPath()))
 
