@@ -2,15 +2,15 @@ package jp.hishidama.shr
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus }
-import org.apache.hadoop.io.UTF8
-import org.apache.hadoop.io.Text
+import org.apache.hadoop.io.{ Writable, UTF8, Text }
+import org.apache.hadoop.io.{ SequenceFile => HSeqFile }
 import org.apache.hadoop.io.SequenceFile.Metadata
 
-import SequenceFileInfo._
+import SequenceFile._
 
-class SequenceFileInfo(val file: Path) {
+class SequenceFile(val path: Path, conf: Configuration) {
 
-  private var _sequenceFile = false
+  private var _sequenceHeader = false
   private var _versionMatch = false
   private var _version = 0: Byte
   private var _keyClassName = ""
@@ -20,8 +20,8 @@ class SequenceFileInfo(val file: Path) {
   private var _codecClassname = ""
   private var _metadata: Metadata = null
 
-  def isValid = _sequenceFile && _versionMatch
-  def sequenceFile = _sequenceFile
+  def isSequenceFile = _sequenceHeader && _versionMatch
+  def sequenceHeader = _sequenceHeader
   def versionMatch = _versionMatch
   def version = _version
   def keyClassName = _keyClassName
@@ -31,15 +31,18 @@ class SequenceFileInfo(val file: Path) {
   def codecClassName = _codecClassname
   def metadata = _metadata
 
+  lazy val keyClass: Class[_ <: Writable] = Class.forName(_keyClassName).asSubclass(classOf[Writable])
+  lazy val valClass: Class[_ <: Writable] = Class.forName(_valClassName).asSubclass(classOf[Writable])
+
   //@see org.apache.hadoop.io.SequenceFile.Reader#init()
-  using(file.fs.open(file.hpath)) { in =>
+  using(path.fs.open(path.hpath)) { in =>
     val versionBlock = new Array[Byte](VERSION.length);
     in.readFully(versionBlock);
 
     if ((versionBlock(0) == VERSION(0)) &&
       (versionBlock(1) == VERSION(1)) &&
       (versionBlock(2) == VERSION(2))) {
-      _sequenceFile = true
+      _sequenceHeader = true
 
       // Set 'version'
       _version = versionBlock(3)
@@ -77,7 +80,7 @@ class SequenceFileInfo(val file: Path) {
           _codecClassname = if (_version >= CUSTOM_COMPRESS_VERSION) {
             Text.readString(in);
           } else {
-            "default"
+            "(default)"
           }
         }
 
@@ -88,10 +91,24 @@ class SequenceFileInfo(val file: Path) {
       }
     }
   }
+
+  override def toString(): String = {
+    "SequenceFile(\n" +
+      " path=" + path + "\n" +
+      " isSequenceFile=" + isSequenceFile + "\n" +
+      " version=" + version + "\n" +
+      " keyClassName=" + keyClassName + "\n" +
+      " valClassName=" + valClassName + "\n" +
+      " decompress=" + decompress + "\n" +
+      " blockCompressed=" + blockCompressed + "\n" +
+      " codecClassName=" + codecClassName + "\n" +
+      ")"
+  }
 }
 
-object SequenceFileInfo {
-  def apply(file: Path) = new SequenceFileInfo(file)
+object SequenceFile {
+  def apply(file: Path) = new SequenceFile(file, conf)
+  def apply(file: Path, c: Configuration) = new SequenceFile(file, c)
 
   val BLOCK_COMPRESS_VERSION = 4: Byte;
   val CUSTOM_COMPRESS_VERSION = 5: Byte;
