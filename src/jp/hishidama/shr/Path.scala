@@ -163,7 +163,7 @@ class Path(val hpath: HPath) extends Comparable[Path] {
     case Nil => Path(hpath, name)
     case seq => Path(seq.head.getPath())
   }
-  def rel(name: String) = Path(hpath, name)
+  def child(name: String) = Path(hpath, name)
 
   def listStatus: Seq[FileStatus] = fs.listStatus(hpath) match {
     case null => Seq()
