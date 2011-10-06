@@ -5,6 +5,10 @@ import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus }
 import org.apache.hadoop.io.{ Writable, UTF8, Text }
 import org.apache.hadoop.io.{ SequenceFile => HSeqFile }
 import org.apache.hadoop.io.SequenceFile.Metadata
+import org.apache.hadoop.io.SequenceFile.CompressionType
+import org.apache.hadoop.io.compress.CompressionCodec
+import org.apache.hadoop.io.compress.DefaultCodec
+import java.io.Closeable
 
 class SequenceFile(val path: Path, conf: Configuration) {
   import SequenceFile._
@@ -119,4 +123,23 @@ object SequenceFile {
   val CUSTOM_COMPRESS_VERSION = 5: Byte;
   val VERSION_WITH_METADATA = 6: Byte;
   val VERSION = Array[Byte]('S', 'E', 'Q', VERSION_WITH_METADATA)
+
+  def createWriter[K <: Writable, V <: Writable](file: Path)(implicit km: ClassManifest[K], vm: ClassManifest[V]): Writer[K, V] =
+    createWriter(file, Path.conf)
+  def createWriter[K <: Writable, V <: Writable](file: Path, conf: Configuration)(implicit km: ClassManifest[K], vm: ClassManifest[V]): Writer[K, V] =
+    createWriter(file, km.erasure.asInstanceOf[Class[K]], vm.erasure.asInstanceOf[Class[V]], conf)
+  def createWriter[K <: Writable, V <: Writable](
+    file: Path,
+    keyClass: Class[K],
+    valClass: Class[V],
+    conf: Configuration = Path.conf,
+    compressionType: CompressionType = CompressionType.NONE,
+    codec: CompressionCodec = new DefaultCodec()) = {
+    new Writer[K, V](HSeqFile.createWriter(file.fs(conf), conf, file, keyClass, valClass, compressionType, codec))
+  }
+
+  class Writer[K <: Writable, V <: Writable](val hwriter: HSeqFile.Writer) extends Closeable {
+    def append(key: K, value: V) = hwriter.append(key, value)
+    override def close() = hwriter.close()
+  }
 }
