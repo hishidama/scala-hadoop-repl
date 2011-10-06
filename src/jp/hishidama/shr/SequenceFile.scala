@@ -6,9 +6,8 @@ import org.apache.hadoop.io.{ Writable, UTF8, Text }
 import org.apache.hadoop.io.{ SequenceFile => HSeqFile }
 import org.apache.hadoop.io.SequenceFile.Metadata
 
-import SequenceFile._
-
 class SequenceFile(val path: Path, conf: Configuration) {
+  import SequenceFile._
 
   private var _sequenceHeader = false
   private var _versionMatch = false
@@ -92,16 +91,22 @@ class SequenceFile(val path: Path, conf: Configuration) {
     }
   }
 
+  def describe: Seq[(String, String)] = Seq(
+    ("path", path.toString()),
+    ("isSequenceFile", isSequenceFile.toString()),
+    ("version", version.toString()),
+    ("keyClassName", keyClassName),
+    ("valClassName", valClassName),
+    ("decompress", decompress.toString()),
+    ("blockCompressed", blockCompressed.toString()),
+    ("codecClassName", codecClassName),
+    ("metadata", metadata.toString()))
+
   override def toString(): String = {
-    "SequenceFile(\n" +
-      " path=" + path + "\n" +
-      " isSequenceFile=" + isSequenceFile + "\n" +
-      " version=" + version + "\n" +
-      " keyClassName=" + keyClassName + "\n" +
-      " valClassName=" + valClassName + "\n" +
-      " decompress=" + decompress + "\n" +
-      " blockCompressed=" + blockCompressed + "\n" +
-      " codecClassName=" + codecClassName + "\n" +
+    "SequenceFile(" +
+      path + "," +
+      keyClassName + "," +
+      valClassName +
       ")"
   }
 }
