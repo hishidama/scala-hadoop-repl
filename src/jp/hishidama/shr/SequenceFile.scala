@@ -39,8 +39,8 @@ class SequenceFile(val path: Path, conf: Configuration) {
 
   //@see org.apache.hadoop.io.SequenceFile.Reader#init()
   using(path.fs.open(path.hpath)) { in =>
-    val versionBlock = new Array[Byte](VERSION.length);
-    in.readFully(versionBlock);
+    val versionBlock = new Array[Byte](VERSION.length)
+    in.readFully(versionBlock)
 
     if ((versionBlock(0) == VERSION(0)) &&
       (versionBlock(1) == VERSION(1)) &&
@@ -53,43 +53,43 @@ class SequenceFile(val path: Path, conf: Configuration) {
         _versionMatch = true
 
         if (_version < BLOCK_COMPRESS_VERSION) {
-          val className = new UTF8();
+          val className = new UTF8()
 
-          className.readFields(in);
-          _keyClassName = className.toString(); // key class name
+          className.readFields(in)
+          _keyClassName = className.toString() // key class name
 
-          className.readFields(in);
-          _valClassName = className.toString(); // val class name
+          className.readFields(in)
+          _valClassName = className.toString() // val class name
         } else {
-          _keyClassName = Text.readString(in);
-          _valClassName = Text.readString(in);
+          _keyClassName = Text.readString(in)
+          _valClassName = Text.readString(in)
         }
 
         _decompress = if (_version > 2) { // if version > 2
-          in.readBoolean(); // is compressed?
+          in.readBoolean() // is compressed?
         } else {
-          false;
+          false
         }
 
         _blockCompressed = if (_version >= BLOCK_COMPRESS_VERSION) { // if version >= 4
-          in.readBoolean(); // is block-compressed?
+          in.readBoolean() // is block-compressed?
         } else {
-          false;
+          false
         }
 
         // if version >= 5
         // setup the compression codec
         if (_decompress) {
           _codecClassname = if (_version >= CUSTOM_COMPRESS_VERSION) {
-            Text.readString(in);
+            Text.readString(in)
           } else {
             "(default)"
           }
         }
 
-        _metadata = new Metadata();
+        _metadata = new Metadata()
         if (_version >= VERSION_WITH_METADATA) { // if version >= 6
-          _metadata.readFields(in);
+          _metadata.readFields(in)
         }
       }
     }
@@ -119,9 +119,9 @@ object SequenceFile {
   def apply(file: Path) = new SequenceFile(file, conf)
   def apply(file: Path, c: Configuration) = new SequenceFile(file, c)
 
-  val BLOCK_COMPRESS_VERSION = 4: Byte;
-  val CUSTOM_COMPRESS_VERSION = 5: Byte;
-  val VERSION_WITH_METADATA = 6: Byte;
+  val BLOCK_COMPRESS_VERSION = 4: Byte
+  val CUSTOM_COMPRESS_VERSION = 5: Byte
+  val VERSION_WITH_METADATA = 6: Byte
   val VERSION = Array[Byte]('S', 'E', 'Q', VERSION_WITH_METADATA)
 
   def createWriter[K <: Writable, V <: Writable](file: Path)(implicit km: ClassManifest[K], vm: ClassManifest[V]): Writer[K, V] =
