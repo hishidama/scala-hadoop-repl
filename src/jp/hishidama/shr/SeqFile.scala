@@ -4,14 +4,12 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus }
 import org.apache.hadoop.io.{ Writable, UTF8, Text }
 import org.apache.hadoop.io.{ SequenceFile => HSeqFile }
-import org.apache.hadoop.io.SequenceFile.Metadata
-import org.apache.hadoop.io.SequenceFile.CompressionType
-import org.apache.hadoop.io.compress.CompressionCodec
-import org.apache.hadoop.io.compress.DefaultCodec
+import org.apache.hadoop.io.SequenceFile.{ Metadata, CompressionType }
+import org.apache.hadoop.io.compress.{ CompressionCodec, DefaultCodec }
 import java.io.Closeable
 
-class SequenceFile(val path: Path, conf: Configuration) {
-  import SequenceFile._
+class SeqFile(val path: Path, conf: Configuration) {
+  import SeqFile._
 
   private var _sequenceHeader = false
   private var _versionMatch = false
@@ -107,7 +105,7 @@ class SequenceFile(val path: Path, conf: Configuration) {
     ("metadata", metadata.toString()))
 
   override def toString(): String = {
-    "SequenceFile(" +
+    "SeqFile(" +
       path + "," +
       keyClassName + "," +
       valClassName +
@@ -115,9 +113,9 @@ class SequenceFile(val path: Path, conf: Configuration) {
   }
 }
 
-object SequenceFile {
-  def apply(file: Path) = new SequenceFile(file, conf)
-  def apply(file: Path, c: Configuration) = new SequenceFile(file, c)
+object SeqFile {
+  def apply(file: Path) = new SeqFile(file, conf)
+  def apply(file: Path, c: Configuration) = new SeqFile(file, c)
 
   val BLOCK_COMPRESS_VERSION = 4: Byte
   val CUSTOM_COMPRESS_VERSION = 5: Byte
