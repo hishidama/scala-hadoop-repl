@@ -189,11 +189,22 @@ object SeqFile {
     conf: Configuration = Path.conf,
     compressionType: CompressionType = CompressionType.NONE,
     codec: CompressionCodec = new DefaultCodec()) = {
-    new Writer[K, V](HSeqFile.createWriter(file.fs(conf), conf, file, keyClass, valClass, compressionType, codec))
+    new Writer[K, V](file, HSeqFile.createWriter(file.fs(conf), conf, file, keyClass, valClass, compressionType, codec))
   }
 
-  class Writer[K <: Writable, V <: Writable](val hwriter: HSeqFile.Writer) extends Closeable {
+  class Writer[K <: Writable, V <: Writable](val path: Path, val hwriter: HSeqFile.Writer) extends Closeable {
+    def keyClass = hwriter.getKeyClass()
+    def valClass = hwriter.getValueClass()
+
     def append(key: K, value: V) = hwriter.append(key, value)
     override def close() = hwriter.close()
+
+    override def toString(): String = {
+      "SeqFile$Writer(" +
+        path + "," +
+        keyClass.getName() + "," +
+        valClass.getName() +
+        ")"
+    }
   }
 }
