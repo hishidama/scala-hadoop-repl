@@ -7,8 +7,9 @@ import org.apache.hadoop.io.{ SequenceFile => HSeqFile }
 import org.apache.hadoop.io.SequenceFile.{ Metadata, CompressionType }
 import org.apache.hadoop.io.compress.{ CompressionCodec, DefaultCodec }
 import java.io.Closeable
+import org.apache.hadoop.io.NullWritable
 
-class SeqFile(val path: Path, conf: Configuration) {
+class SeqFile(val path: Path, val conf: Configuration) {
   import SeqFile._
 
   private var _sequenceHeader = false
@@ -90,6 +91,61 @@ class SeqFile(val path: Path, conf: Configuration) {
           _metadata.readFields(in)
         }
       }
+    }
+  }
+
+  def show: Unit = cat
+  def cat: Unit = {
+    using(lines()) { r =>
+      r.foreach(println)
+    }
+  }
+  def head: Unit = head(Path.HEAD_DEFAULT_SIZE)
+  def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
+    using(lines()) { r =>
+      r.take(size).foreach(println)
+    }
+  }
+  def tail: Unit = tail(Path.TAIL_DEFAULT_SIZE)
+  def tail(size: Int = Path.TAIL_DEFAULT_SIZE): Unit = {
+    using(lines()) { r =>
+      r.toIterable.takeRight(size).foreach(println)
+    }
+  }
+  def lines[K <: Writable, V <: Writable](): Iterator[(K, V)] with Closeable = {
+    lines(
+      getCreator(keyClass.asInstanceOf[Class[K]])(),
+      getCreator(valClass.asInstanceOf[Class[V]])())
+  }
+  def lines[K <: Writable, V <: Writable](keyCreator: => K, valCreator: => V): Iterator[(K, V)] with Closeable = {
+    val reader = openReader()
+    def read(): (Boolean, K, V) = {
+      val k = keyCreator
+      val v = valCreator
+      val b = reader.next(k, v)
+      if (!b) { reader.close() }
+      (b, k, v)
+    }
+    class ReaderIterator extends Iterator[(K, V)] with Closeable {
+      private var t = read()
+      def hasNext = t._1
+      def next: (K, V) = {
+        val r = (t._2, t._3)
+        t = read()
+        r
+      }
+      def close() = reader.close()
+    }
+    new ReaderIterator()
+  }
+  def openReader(): HSeqFile.Reader = new HSeqFile.Reader(path.fs(conf), path, conf)
+
+  def getCreator[A](c: Class[A]): () => A = {
+    c match {
+      case c if c == classOf[NullWritable] =>
+        () => { NullWritable.get.asInstanceOf[A] }
+      case c =>
+        () => { c.newInstance() }
     }
   }
 

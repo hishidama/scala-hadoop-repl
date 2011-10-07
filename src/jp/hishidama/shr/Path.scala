@@ -52,7 +52,12 @@ class Path(val hpath: HPath) extends Comparable[Path] {
   def listAll: Seq[Path] = listStatus.map(fs => Path(fs.getPath()))
   def listAll(dir: String): Seq[Path] = globStatus(dir).map(fs => Path(fs.getPath()))
 
-  def show: Unit = cat
+  def show: Unit = {
+    val sf = if (isFile) SeqFile(this) else null
+    if ((sf ne null) && sf.isSequenceFile) {
+      sf.cat
+    } else cat
+  }
   def cat: Unit = {
     using(lines()) { r =>
       r.foreach(println)
@@ -80,13 +85,17 @@ class Path(val hpath: HPath) extends Comparable[Path] {
         try { is.close() } catch { case _ => }
         throw e
     }
+    def read(): String = {
+      val r = br.readLine()
+      if (r == null) { br.close() }
+      r
+    }
     class ReaderIterator extends Iterator[String] with Closeable {
-      private var s = br.readLine()
+      private var s = read()
       def hasNext: Boolean = s != null
       def next: String = {
         val r = s
-        s = br.readLine()
-        if (s == null) { close() }
+        s = read()
         r
       }
       def close() = br.close()
@@ -185,6 +194,8 @@ class Path(val hpath: HPath) extends Comparable[Path] {
     }
     resolve(hpath, name.split("/").toList)
   }
+
+  def asSeqFile = SeqFile(this)
 }
 
 object Path {
