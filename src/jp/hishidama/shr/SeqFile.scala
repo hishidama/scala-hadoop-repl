@@ -100,25 +100,28 @@ class SeqFile(val path: Path, val conf: Configuration) {
       r.foreach(println)
     }
   }
-  def head: Unit = head(Path.HEAD_DEFAULT_SIZE)
+  def head: Unit = head()
   def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
     using(lines()) { r =>
       r.take(size).foreach(println)
     }
   }
-  def tail: Unit = tail(Path.TAIL_DEFAULT_SIZE)
-  def tail(size: Int = Path.TAIL_DEFAULT_SIZE): Unit = {
-    using(lines()) { r =>
+  def tail: Unit = tail()
+  def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = {
+    using(lines(skipBytes)) { r =>
       r.toIterable.takeRight(size).foreach(println)
     }
   }
-  def lines[K <: Writable, V <: Writable](): Iterator[(K, V)] with Closeable = {
+  def lines[K <: Writable, V <: Writable](skipBytes: Long = 0): Iterator[(K, V)] with Closeable = {
     lines(
       getCreator(keyClass.asInstanceOf[Class[K]])(),
-      getCreator(valClass.asInstanceOf[Class[V]])())
+      getCreator(valClass.asInstanceOf[Class[V]])(),
+      skipBytes)
   }
-  def lines[K <: Writable, V <: Writable](keyCreator: => K, valCreator: => V): Iterator[(K, V)] with Closeable = {
-    val reader = openReader()
+  def lines[K <: Writable, V <: Writable](keyCreator: => K, valCreator: => V): Iterator[(K, V)] with Closeable =
+    lines(keyCreator, valCreator, 0)
+  def lines[K <: Writable, V <: Writable](keyCreator: => K, valCreator: => V, skipBytes: Long): Iterator[(K, V)] with Closeable = {
+    val reader = openReader(skipBytes)
     def read(): (Boolean, K, V) = {
       val k = keyCreator
       val v = valCreator
@@ -138,7 +141,15 @@ class SeqFile(val path: Path, val conf: Configuration) {
     }
     new ReaderIterator()
   }
-  def openReader(): HSeqFile.Reader = new HSeqFile.Reader(path.fs(conf), path, conf)
+  def openReader(skipBytes: Long = 0): HSeqFile.Reader = {
+    val r = new HSeqFile.Reader(path.fs(conf), path, conf)
+    skipBytes match {
+      case 0 =>
+      case n if n > 0 => r.sync(n)
+      case n if n < 0 => val s = path.size + n; if (s > 0) r.sync(s)
+    }
+    r
+  }
 
   def getCreator[A](c: Class[A]): () => A = {
     c match {

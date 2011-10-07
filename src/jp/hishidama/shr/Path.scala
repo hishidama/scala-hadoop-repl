@@ -63,21 +63,26 @@ class Path(val hpath: HPath) extends Comparable[Path] {
       r.foreach(println)
     }
   }
-  def head: Unit = head(Path.HEAD_DEFAULT_SIZE)
+  def head: Unit = head()
   def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
     using(lines()) { r =>
       r.take(size).foreach(println)
     }
   }
-  def tail: Unit = tail(Path.TAIL_DEFAULT_SIZE)
-  def tail(size: Int = Path.TAIL_DEFAULT_SIZE): Unit = {
-    using(lines()) { r =>
+  def tail: Unit = tail()
+  def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = {
+    using(lines(skipBytes)) { r =>
       r.toIterable.takeRight(size).foreach(println)
     }
   }
-  def lines() = openReader()
-  def openReader(encoding: String = "UTF-8"): Iterator[String] with Closeable = {
+  def lines(skipBytes: Long = 0) = openReader(skipBytes = skipBytes)
+  def openReader(encoding: String = "UTF-8", skipBytes: Long = 0): Iterator[String] with Closeable = {
     val is = fs.open(hpath)
+    skipBytes match {
+      case 0 =>
+      case n if n > 0 => is.seek(n)
+      case n if n < 0 => val s = size + n; if (s > 0) is.seek(s)
+    }
     val br = try {
       new BufferedReader(new InputStreamReader(is, encoding))
     } catch {
