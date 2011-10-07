@@ -193,10 +193,14 @@ object SeqFile {
   }
 
   class Writer[K <: Writable, V <: Writable](val path: Path, val hwriter: HSeqFile.Writer) extends Closeable {
-    def keyClass = hwriter.getKeyClass()
-    def valClass = hwriter.getValueClass()
+    lazy val keyClass = hwriter.getKeyClass()
+    lazy val valClass = hwriter.getValueClass()
 
-    def append(key: K, value: V) = hwriter.append(key, value)
+    def append(key: K, value: V) = {
+      val k = if ((key eq null) && keyClass == classOf[NullWritable]) NullWritable.get() else key
+      val v = if ((value eq null) && valClass == classOf[NullWritable]) NullWritable.get() else value
+      hwriter.append(k, v)
+    }
     override def close() = hwriter.close()
 
     override def toString(): String = {
