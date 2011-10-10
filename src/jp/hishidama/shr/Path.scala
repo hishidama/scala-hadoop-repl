@@ -55,8 +55,27 @@ class Path(val hpath: HPath) extends Comparable[Path] {
   def show: Unit = {
     val sf = if (isFile) SeqFile(this) else null
     if ((sf ne null) && sf.isSequenceFile) {
-      sf.cat
-    } else cat
+      sf.more
+    } else more
+  }
+  def more: Unit = {
+    using(lines()) { r =>
+      import scala.util.control.Breaks.{ break, breakable }
+      breakable {
+        var i = 0
+        r.foreach { s =>
+          i += 1
+          if (i > 100) {
+            val c = scala.Console.readLine
+            c.headOption match {
+              case Some(c) if c == 'q' || c == 'Q' => break
+              case _ => i = 1
+            }
+          }
+          println(s)
+        }
+      }
+    }
   }
   def cat: Unit = head(100)
   def head: Unit = head()

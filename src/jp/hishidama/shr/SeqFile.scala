@@ -94,7 +94,28 @@ class SeqFile(val path: Path, val conf: Configuration) {
     }
   }
 
-  def show: Unit = cat
+  def show: Unit = more
+  def more: Unit = {
+    val kf = keyToString
+    val vf = valToString
+    using(lines()) { r =>
+      import scala.util.control.Breaks.{ break, breakable }
+      breakable {
+        var i = 0
+        r.foreach { t =>
+          i += 1
+          if (i > 100) {
+            val c = scala.Console.readLine
+            c.headOption match {
+              case Some(c) if c == 'q' || c == 'Q' => break
+              case _ => i = 1
+            }
+          }
+          println(kf(t._1), vf(t._2))
+        }
+      }
+    }
+  }
   def cat: Unit = head(100)
   def head: Unit = head()
   def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
