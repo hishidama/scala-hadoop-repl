@@ -58,11 +58,7 @@ class Path(val hpath: HPath) extends Comparable[Path] {
       sf.cat
     } else cat
   }
-  def cat: Unit = {
-    using(lines()) { r =>
-      r.foreach(println)
-    }
-  }
+  def cat: Unit = head(100)
   def head: Unit = head()
   def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
     using(lines()) { r =>

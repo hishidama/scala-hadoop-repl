@@ -95,13 +95,7 @@ class SeqFile(val path: Path, val conf: Configuration) {
   }
 
   def show: Unit = cat
-  def cat: Unit = {
-    val kf = keyToString
-    val vf = valToString
-    using(lines()) { r =>
-      r.foreach(t => println(kf(t._1), vf(t._2)))
-    }
-  }
+  def cat: Unit = head(100)
   def head: Unit = head()
   def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
     val kf = keyToString
