@@ -96,20 +96,26 @@ class SeqFile(val path: Path, val conf: Configuration) {
 
   def show: Unit = cat
   def cat: Unit = {
+    val kf = keyToString
+    val vf = valToString
     using(lines()) { r =>
-      r.foreach(println)
+      r.foreach(t => println(kf(t._1), vf(t._2)))
     }
   }
   def head: Unit = head()
   def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
+    val kf = keyToString
+    val vf = valToString
     using(lines()) { r =>
-      r.take(size).foreach(println)
+      r.take(size).foreach(t => println(kf(t._1), vf(t._2)))
     }
   }
   def tail: Unit = tail()
   def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = {
+    val kf = keyToString
+    val vf = valToString
     using(lines(skipBytes)) { r =>
-      r.toIterable.takeRight(size).foreach(println)
+      r.toIterable.takeRight(size).foreach(t => println(kf(t._1), vf(t._2)))
     }
   }
   def lines[K <: Writable, V <: Writable](skipBytes: Long = 0): Iterator[(K, V)] with Closeable = {
@@ -150,6 +156,24 @@ class SeqFile(val path: Path, val conf: Configuration) {
     }
     r
   }
+
+  private var _keyToString: ToString[_] = null
+  def keyToString[K]: ToString[K] = {
+    if (_keyToString eq null) {
+      _keyToString = ToString(keyClass)
+    }
+    _keyToString.asInstanceOf[ToString[K]]
+  }
+  def keyToString_=[K](f: ToString[K]) = _keyToString = f
+
+  private var _valToString: ToString[_] = null
+  def valToString[V]: ToString[V] = {
+    if (_valToString eq null) {
+      _valToString = ToString(valClass)
+    }
+    _valToString.asInstanceOf[ToString[V]]
+  }
+  def valToString_=[V](f: ToString[V]) = _valToString = f
 
   def getCreator[A](c: Class[A]): () => A = {
     c match {
