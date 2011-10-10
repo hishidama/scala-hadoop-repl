@@ -7,7 +7,7 @@ import java.io._
 import java.lang.Comparable
 import java.net.URI
 
-class Path(val hpath: HPath) extends Comparable[Path] {
+class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
   self =>
 
   def parent = Path(hpath.getParent())
@@ -52,44 +52,16 @@ class Path(val hpath: HPath) extends Comparable[Path] {
   def listAll: Seq[Path] = listStatus.map(fs => Path(fs.getPath()))
   def listAll(dir: String): Seq[Path] = globStatus(dir).map(fs => Path(fs.getPath()))
 
-  def show: Unit = {
-    val sf = if (isFile) SeqFile(this) else null
-    if ((sf ne null) && sf.isSequenceFile) {
-      sf.more
-    } else more
-  }
-  def more: Unit = {
-    using(lines()) { r =>
-      import scala.util.control.Breaks.{ break, breakable }
-      breakable {
-        var i = 0
-        r.foreach { s =>
-          i += 1
-          if (i > 100) {
-            val c = scala.Console.readLine
-            c.headOption match {
-              case Some(c) if c == 'q' || c == 'Q' => break
-              case _ => i = 1
-            }
-          }
-          println(s)
-        }
-      }
-    }
-  }
-  def cat: Unit = head(100)
-  def head: Unit = head()
-  def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
-    using(lines()) { r =>
-      r.take(size).foreach(println)
-    }
-  }
-  def tail: Unit = tail()
-  def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = {
-    using(lines(skipBytes)) { r =>
-      r.toIterable.takeRight(size).foreach(println)
-    }
-  }
+  protected override def getPrinter = (s: String) => println(s)
+  protected override def getLines(skipBytes: Long) = lines(skipBytes)
+
+  override def more: Unit = more()
+  override def more(size: Int = Path.MORE_DEFAULT_SIZE, skipBytes: Long = 0) = asSeqFileOption.getOrElse(this).doMore(size, skipBytes)
+  override def head: Unit = head()
+  override def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = asSeqFileOption.getOrElse(this).doHead(size)
+  override def tail: Unit = tail()
+  override def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = asSeqFileOption.getOrElse(this).doTail(size, skipBytes)
+
   def lines(skipBytes: Long = 0) = openReader(skipBytes = skipBytes)
   def openReader(encoding: String = "UTF-8", skipBytes: Long = 0): Iterator[String] with Closeable = {
     val is = fs.open(hpath)
@@ -216,6 +188,10 @@ class Path(val hpath: HPath) extends Comparable[Path] {
   }
 
   def asSeqFile = SeqFile(this)
+  def asSeqFileOption: Option[SeqFile] = {
+    val sf = if (isFile) SeqFile(this) else null
+    if ((sf ne null) && sf.isSequenceFile) Some(sf) else None
+  }
 }
 
 object Path {
@@ -236,6 +212,7 @@ object Path {
   var BUFFER_SIZE = conf.getInt("io.file.buffer.size", 4096)
   var HEAD_DEFAULT_SIZE = 10
   var TAIL_DEFAULT_SIZE = 10
+  var MORE_DEFAULT_SIZE = 100
 }
 
 trait LocalPath {

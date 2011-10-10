@@ -9,7 +9,7 @@ import org.apache.hadoop.io.compress.{ CompressionCodec, DefaultCodec }
 import java.io.Closeable
 import org.apache.hadoop.io.NullWritable
 
-class SeqFile(val path: Path, val conf: Configuration) {
+class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, Writable)] {
   import SeqFile._
 
   private var _sequenceHeader = false
@@ -94,45 +94,13 @@ class SeqFile(val path: Path, val conf: Configuration) {
     }
   }
 
-  def show: Unit = more
-  def more: Unit = {
-    val kf = keyToString
-    val vf = valToString
-    using(lines()) { r =>
-      import scala.util.control.Breaks.{ break, breakable }
-      breakable {
-        var i = 0
-        r.foreach { t =>
-          i += 1
-          if (i > 100) {
-            val c = scala.Console.readLine
-            c.headOption match {
-              case Some(c) if c == 'q' || c == 'Q' => break
-              case _ => i = 1
-            }
-          }
-          println(kf(t._1), vf(t._2))
-        }
-      }
-    }
+  protected override def getPrinter = {
+    val kf = keyToString[Writable]
+    val vf = valToString[Writable]
+    (s: (Writable, Writable)) => println(kf(s._1), vf(s._2))
   }
-  def cat: Unit = head(100)
-  def head: Unit = head()
-  def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = {
-    val kf = keyToString
-    val vf = valToString
-    using(lines()) { r =>
-      r.take(size).foreach(t => println(kf(t._1), vf(t._2)))
-    }
-  }
-  def tail: Unit = tail()
-  def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = {
-    val kf = keyToString
-    val vf = valToString
-    using(lines(skipBytes)) { r =>
-      r.toIterable.takeRight(size).foreach(t => println(kf(t._1), vf(t._2)))
-    }
-  }
+  protected override def getLines(skipBytes: Long) = lines(skipBytes)
+
   def lines[K <: Writable, V <: Writable](skipBytes: Long = 0): Iterator[(K, V)] with Closeable = {
     lines(
       getCreator(keyClass.asInstanceOf[Class[K]])(),
