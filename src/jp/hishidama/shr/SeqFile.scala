@@ -35,6 +35,8 @@ class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, W
 
   lazy val keyClass: Class[_ <: Writable] = Class.forName(_keyClassName).asSubclass(classOf[Writable])
   lazy val valClass: Class[_ <: Writable] = Class.forName(_valClassName).asSubclass(classOf[Writable])
+  def findKeyClassJar(dir: Path) = ClassUtil.findFromFileSystem(keyClassName, dir)
+  def findValClassJar(dir: Path) = ClassUtil.findFromFileSystem(valClassName, dir)
 
   //@see org.apache.hadoop.io.SequenceFile.Reader#init()
   using(path.fs.open(path.hpath)) { in =>
