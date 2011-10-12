@@ -22,9 +22,9 @@ object ClassUtil {
     val fname = classFileName(className)
     def find(f: JFile): Seq[JFile] = {
       if (f.isDirectory()) {
-        var seq = Seq.empty[JFile]
-        f.listFiles().foreach { f => seq ++= find(f) }
-        seq
+        val fs = f.listFiles()
+        if (fs ne null) fs.map(find(_)).fold(Seq.empty)(_ ++ _)
+        else Seq()
       } else {
         if (existsInJar(fname, f)) Seq(f)
         else Seq()
@@ -41,9 +41,10 @@ object ClassUtil {
   }
 
   def existsInJar(fname: String, file: JFile): Boolean = {
-    if (file.isFile() && file.getName().endsWith(".jar")) {
+    if (file.isFile() && file.getName().endsWith(".jar")) try {
       val jf = new JarFile(file)
       jf.getEntry(fname) ne null
-    } else false
+    } catch { case _ => false }
+    else false
   }
 }
