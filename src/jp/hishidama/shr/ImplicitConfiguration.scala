@@ -19,14 +19,19 @@ trait ImplicitConfiguration {
           case p: Path => p.toURL
         }
       }
-      conf.getClassLoader() match {
+      val parent = conf.getClassLoader()
+      val olds = getURLs(parent)
+      val urls = add.filterNot(olds.contains)
+      if (urls.nonEmpty) {
+        conf.setClassLoader(new URLClassLoader(urls.toArray, parent))
+      }
+    }
+
+    private def getURLs(cl: ClassLoader): Set[URL] = {
+      cl match {
         case ul: URLClassLoader =>
-          val urls = (ul.getURLs() ++ add).distinct
-          val pl = ul.getParent()
-          conf.setClassLoader(new URLClassLoader(urls, pl))
-        case pl =>
-          val urls = add.toArray[URL]
-          conf.setClassLoader(new URLClassLoader(urls, pl))
+          getURLs(ul.getParent()) ++ ul.getURLs()
+        case _ => Set()
       }
     }
   }
