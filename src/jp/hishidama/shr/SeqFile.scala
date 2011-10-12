@@ -2,12 +2,11 @@ package jp.hishidama.shr
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus }
-import org.apache.hadoop.io.{ Writable, UTF8, Text }
+import org.apache.hadoop.io.{ Writable, UTF8, Text, NullWritable }
 import org.apache.hadoop.io.{ SequenceFile => HSeqFile }
 import org.apache.hadoop.io.SequenceFile.{ Metadata, CompressionType }
 import org.apache.hadoop.io.compress.{ CompressionCodec, DefaultCodec }
-import java.io.Closeable
-import org.apache.hadoop.io.NullWritable
+import java.io.{ File => JFile, Closeable }
 
 class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, Writable)] {
   import SeqFile._
@@ -33,8 +32,10 @@ class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, W
   def codecClassName = _codecClassname
   def metadata = _metadata
 
-  lazy val keyClass: Class[_ <: Writable] = Class.forName(_keyClassName).asSubclass(classOf[Writable])
-  lazy val valClass: Class[_ <: Writable] = Class.forName(_valClassName).asSubclass(classOf[Writable])
+  lazy val keyClass: Class[_ <: Writable] = conf.getClassByName(_keyClassName).asSubclass(classOf[Writable])
+  lazy val valClass: Class[_ <: Writable] = conf.getClassByName(_valClassName).asSubclass(classOf[Writable])
+  def findKeyClassJar(dir: String): Seq[JFile] = findKeyClassJar(LocalPath(dir))
+  def findValClassJar(dir: String): Seq[JFile] = findValClassJar(LocalPath(dir))
   def findKeyClassJar(dir: Path) = ClassUtil.findFromFileSystem(keyClassName, dir)
   def findValClassJar(dir: Path) = ClassUtil.findFromFileSystem(valClassName, dir)
 
