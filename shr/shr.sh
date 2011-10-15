@@ -13,6 +13,13 @@ export HADOOP_CLASSPATH
 export HADOOP_OPTS=-Dscala.usejavacp=true
 
 SHR_CLASSPATH=shr.jar:$SHR_CLASSPATH
+if [ "$ASAKUSA_HOME" != "" ]; then
+  if $cygwin; then
+    SHR_CLASSPATH+=:$(cygpath -u "$ASAKUSA_HOME")/core/lib/asakusa-runtime.jar
+  else
+    SHR_CLASSPATH+=:$ASAKUSA_HOME/core/lib/asakusa-runtime.jar
+  fi
+fi
 if $cygwin; then
   SHR_CLASSPATH=$(cygpath -mp "$SHR_CLASSPATH")
 fi
