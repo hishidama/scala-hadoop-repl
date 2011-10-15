@@ -2,10 +2,10 @@ package jp.hishidama.shr
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus }
-
 import java.io._
 import java.lang.Comparable
 import java.net.URI
+import jp.hishidama.shr.swing.TextViewer
 
 class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
   self =>
@@ -61,6 +61,12 @@ class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
   override def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = asSeqFileOption.getOrElse(this).doHead(size)
   override def tail: Unit = tail()
   override def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = asSeqFileOption.getOrElse(this).doTail(size, skipBytes)
+
+  def view: Any = view()
+  def view(size: Int = Path.HEAD_DEFAULT_SIZE, skipBytes: Long = 0) = this match {
+    case f if f.isFile => TextViewer.show(this, size, skipBytes)
+    case _ => println("file-type not supported")
+  }
 
   def lines(skipBytes: Long = 0) = openReader(skipBytes = skipBytes)
   def openReader(encoding: String = "UTF-8", skipBytes: Long = 0): Iterator[String] with Closeable = {
