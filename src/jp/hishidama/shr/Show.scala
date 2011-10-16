@@ -2,7 +2,7 @@ package jp.hishidama.shr
 import java.io.Closeable
 
 trait Show[A] {
-  protected def getPrinter: A => Unit
+  protected def getPrinter: A => String
   protected def getLines(skipBytes: Long): Iterator[A] with Closeable
 
   def show: Unit = show()
@@ -17,7 +17,7 @@ trait Show[A] {
 
   def doMore(size: Int, skipBytes: Long): Unit = {
     using(getLines(skipBytes)) { r =>
-      val print = getPrinter
+      val conv = getPrinter
 
       import scala.util.control.Breaks.{ break, breakable }
       breakable {
@@ -38,7 +38,7 @@ trait Show[A] {
                 i = 1
             }
           }
-          print(a)
+          println(conv(a))
         }
       }
     }
@@ -46,15 +46,15 @@ trait Show[A] {
 
   def doHead(size: Int): Unit = {
     using(getLines(0)) { r =>
-      val print = getPrinter
-      r.take(size).foreach(print)
+      val conv = getPrinter
+      r.take(size).foreach(s => println(conv(s)))
     }
   }
 
   def doTail(size: Int, skipBytes: Long): Unit = {
     using(getLines(skipBytes)) { r =>
-      val print = getPrinter
-      r.toIterable.takeRight(size).foreach(print)
+      val conv = getPrinter
+      r.toIterable.takeRight(size).foreach(s => println(conv(s)))
     }
   }
 }

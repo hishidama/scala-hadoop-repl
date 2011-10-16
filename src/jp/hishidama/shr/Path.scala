@@ -5,7 +5,7 @@ import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus }
 import java.io._
 import java.lang.Comparable
 import java.net.URI
-import jp.hishidama.shr.swing.TextViewer
+import jp.hishidama.shr.view._
 
 class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
   self =>
@@ -52,7 +52,7 @@ class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
   def listAll: Seq[Path] = listStatus.map(fs => Path(fs.getPath()))
   def listAll(dir: String): Seq[Path] = globStatus(dir).map(fs => Path(fs.getPath()))
 
-  protected override def getPrinter = (s: String) => println(s)
+  protected override def getPrinter = (s: String) => s
   protected override def getLines(skipBytes: Long) = lines(skipBytes)
 
   override def more: Unit = more()
@@ -62,10 +62,14 @@ class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
   override def tail: Unit = tail()
   override def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = asSeqFileOption.getOrElse(this).doTail(size, skipBytes)
 
-  def view: Any = view()
-  def view(size: Int = Path.HEAD_DEFAULT_SIZE, skipBytes: Long = 0) = this match {
-    case f if f.isFile => TextViewer.show(this, size, skipBytes)
-    case _ => println("file-type not supported")
+  def view: Option[PathViewer] = view()
+  def view(size: Int = Path.HEAD_DEFAULT_SIZE, skipBytes: Long = 0): Option[PathViewer] = this match {
+    case d if d.isDirectory => Some(DirViewer.show(this))
+    case f if f.isFile =>
+      val sf = f.asSeqFile
+      if (sf.isSequenceFile) sf.view(size, skipBytes)
+      else Some(TextViewer.show(this, size, skipBytes))
+    case _ => None
   }
 
   def lines(skipBytes: Long = 0) = openReader(skipBytes = skipBytes)

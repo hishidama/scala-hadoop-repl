@@ -7,6 +7,7 @@ import org.apache.hadoop.io.{ SequenceFile => HSeqFile }
 import org.apache.hadoop.io.SequenceFile.{ Metadata, CompressionType }
 import org.apache.hadoop.io.compress.{ CompressionCodec, DefaultCodec }
 import java.io.{ File => JFile, Closeable }
+import jp.hishidama.shr.view._
 
 class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, Writable)] {
   import SeqFile._
@@ -42,7 +43,9 @@ class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, W
   //@see org.apache.hadoop.io.SequenceFile.Reader#init()
   using(path.fs.open(path.hpath)) { in =>
     val versionBlock = new Array[Byte](VERSION.length)
-    in.readFully(versionBlock)
+    try {
+      in.readFully(versionBlock)
+    } catch { case _ => /* ファイルサイズがviersionBlockより小さいと例外が発生する */ }
 
     if ((versionBlock(0) == VERSION(0)) &&
       (versionBlock(1) == VERSION(1)) &&
@@ -97,12 +100,16 @@ class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, W
     }
   }
 
-  protected override def getPrinter = {
+  override def getPrinter = {
     val kf = keyToString[Writable]
     val vf = valToString[Writable]
-    (s: (Writable, Writable)) => println(kf(s._1), vf(s._2))
+    (s: (Writable, Writable)) => (kf(s._1), vf(s._2)).toString
   }
-  protected override def getLines(skipBytes: Long) = lines(skipBytes)
+  override def getLines(skipBytes: Long) = lines(skipBytes)
+
+  def view: Option[PathViewer] = view()
+  def view(size: Int = Path.HEAD_DEFAULT_SIZE, skipBytes: Long = 0): Option[PathViewer] =
+    Some(SeqFileViewer.show(this, size, skipBytes))
 
   def lines[K <: Writable, V <: Writable](skipBytes: Long = 0): Iterator[(K, V)] with Closeable = {
     lines(
