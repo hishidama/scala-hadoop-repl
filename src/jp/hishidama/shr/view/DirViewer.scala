@@ -3,6 +3,7 @@ package jp.hishidama.shr.view
 import scala.swing._
 import org.apache.hadoop.fs.{ Path => HPath, FileStatus }
 import jp.hishidama.swing.tree.{ LazyTree, LazyTreeNode }
+import jp.hishidama.scala_swing.RowSortTable
 import jp.hishidama.shr._
 
 class DirViewer(path: Path) extends PathViewer(path) {
@@ -53,13 +54,12 @@ class DirViewer(path: Path) extends PathViewer(path) {
     }
   }
 
-  class FilesTable extends Table {
-    override lazy val model = super.model.asInstanceOf[javax.swing.table.DefaultTableModel]
+  class FilesTable extends RowSortTable {
     autoResizeMode = Table.AutoResizeMode.Off
 
-    model.addColumn("name")
-    model.addColumn("size")
-    model.addColumn("replication")
+    model.addColumn("name", classOf[String])
+    model.addColumn("size", classOf[java.lang.Long])
+    model.addColumn("replication", classOf[java.lang.Short])
 
     def addRow(fs: FileStatus) = model.addRow(Array[AnyRef](
       fs.getPath().getName(),

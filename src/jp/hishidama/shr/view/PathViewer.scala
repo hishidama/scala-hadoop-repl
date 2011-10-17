@@ -1,17 +1,16 @@
 package jp.hishidama.shr.view
 
 import scala.swing._
+import jp.hishidama.scala_swing.RowSortTable
 import jp.hishidama.shr._
 
 abstract class PathViewer(val path: Path) extends Frame {
   def viewerName: String
   title = viewerName + " " + path
 
-  val header = new Table {
-    override lazy val model = super.model.asInstanceOf[javax.swing.table.DefaultTableModel]
-
-    model.addColumn("property")
-    model.addColumn("value")
+  val header = new RowSortTable {
+    model.addColumn("property", classOf[String])
+    model.addColumn("value", classOf[Object])
 
     addRow("path", path)
     def addRow(name: String, value: AnyRef) = model.addRow(Array[AnyRef](name, value))
@@ -24,7 +23,7 @@ abstract class PathViewer(val path: Path) extends Frame {
     bottomComponent = new ScrollPane(viewer)
 
     dividerSize = 4
-    dividerLocation = 64
+    dividerLocation = 100
   }
   contents = split
   size = new Dimension(640, 480)
