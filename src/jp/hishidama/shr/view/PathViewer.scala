@@ -20,7 +20,7 @@ abstract class PathViewer(val path: Path) extends Frame {
 
   val split = new SplitPane(Orientation.Horizontal) {
     topComponent = new ScrollPane(header)
-    bottomComponent = new ScrollPane(viewer)
+    bottomComponent = viewer
 
     dividerSize = 4
     dividerLocation = 100

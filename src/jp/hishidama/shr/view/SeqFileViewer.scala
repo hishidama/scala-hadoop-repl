@@ -11,13 +11,13 @@ class SeqFileViewer(sf: SeqFile, val lineSize: Int, val skipBytes: Long) extends
   header.addRow("keyClassName", sf.keyClassName)
   header.addRow("valClassName", sf.valClassName)
 
-  override lazy val viewer = new TextArea {
+  override lazy val viewer = new ScrollPane(new TextArea {
     editable = false
     text = {
       val conv = sf.getPrinter
       using(sf.getLines(skipBytes)) { _.take(lineSize).map(conv).mkString("\n") }
     }
-  }
+  })
 
   override def toString() = {
     viewerName + "(" + path + "," + lineSize + "," + skipBytes + ")"

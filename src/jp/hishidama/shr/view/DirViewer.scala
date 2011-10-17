@@ -15,6 +15,7 @@ class DirViewer(path: Path) extends PathViewer(path) {
     rightComponent = new ScrollPane(filesTable)
 
     dividerSize = 4
+    dividerLocation = 224
   }
 
   class DirTree extends Component with Scrollable.Wrapper {

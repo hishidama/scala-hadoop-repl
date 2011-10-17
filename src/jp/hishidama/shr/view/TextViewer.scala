@@ -9,10 +9,10 @@ class TextViewer(path: Path, val lineSize: Int, val skipBytes: Long) extends Pat
   header.addRow("view line size", lineSize: java.lang.Integer)
   header.addRow("skip[Byte]", skipBytes: java.lang.Long)
 
-  override lazy val viewer = new TextArea {
+  override lazy val viewer = new ScrollPane(new TextArea {
     editable = false
     text = using(path.lines(skipBytes)) { _.take(lineSize).mkString("\n") }
-  }
+  })
 
   override def toString() = {
     viewerName + "(" + path + "," + lineSize + "," + skipBytes + ")"
