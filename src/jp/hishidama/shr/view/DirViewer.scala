@@ -12,6 +12,8 @@ class DirViewer(path: Path) extends PathViewer(path) {
   override lazy val viewer = new SplitPane(Orientation.Vertical) {
     leftComponent = new ScrollPane(new DirTree)
     rightComponent = new ScrollPane(filesTable)
+
+    dividerSize = 4
   }
 
   class DirTree extends Component with Scrollable.Wrapper {

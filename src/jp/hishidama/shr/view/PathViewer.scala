@@ -22,9 +22,12 @@ abstract class PathViewer(val path: Path) extends Frame {
   val split = new SplitPane(Orientation.Horizontal) {
     topComponent = new ScrollPane(header)
     bottomComponent = new ScrollPane(viewer)
+
+    dividerSize = 4
+    dividerLocation = 64
   }
   contents = split
-  pack()
+  size = new Dimension(640, 480)
 
   override def closeOperation() = dispose()
 
