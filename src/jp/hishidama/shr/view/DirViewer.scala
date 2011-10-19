@@ -5,6 +5,7 @@ import org.apache.hadoop.fs.{ Path => HPath, FileStatus }
 import jp.hishidama.swing.tree.{ LazyTree, LazyTreeNode }
 import jp.hishidama.scala_swing.RowSortTable
 import jp.hishidama.shr._
+import java.text.SimpleDateFormat
 
 class DirViewer(path: Path) extends PathViewer(path) {
   override lazy val viewerName = "DirViewer"
@@ -58,14 +59,25 @@ class DirViewer(path: Path) extends PathViewer(path) {
   class FilesTable extends RowSortTable {
     autoResizeMode = Table.AutoResizeMode.Off
 
+    model.addColumn("No", classOf[java.lang.Integer])
     model.addColumn("name", classOf[String])
     model.addColumn("size", classOf[java.lang.Long])
     model.addColumn("replication", classOf[java.lang.Short])
+    model.addColumn("modify", classOf[java.lang.String])
 
+    val columnModel = peer.getColumnModel()
+    columnModel.getColumn(0).setPreferredWidth(32)
+    columnModel.getColumn(1).setPreferredWidth(120)
+    columnModel.getColumn(3).setPreferredWidth(32)
+    columnModel.getColumn(4).setPreferredWidth(128)
+
+    val sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
     def addRow(fs: FileStatus) = model.addRow(Array[AnyRef](
+      (model.getRowCount() + 1): java.lang.Integer,
       fs.getPath().getName(),
       fs.getLen(): java.lang.Long,
-      fs.getReplication(): java.lang.Short))
+      fs.getReplication(): java.lang.Short,
+      sdf.format(new java.util.Date(fs.getModificationTime()))))
     def removeRows() = {
       while (model.getRowCount() > 0) {
         model.removeRow(model.getRowCount() - 1)

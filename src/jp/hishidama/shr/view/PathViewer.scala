@@ -9,11 +9,20 @@ abstract class PathViewer(val path: Path) extends Frame {
   title = viewerName + " " + path
 
   val header = new RowSortTable {
+    model.addColumn("No", classOf[java.lang.Integer])
     model.addColumn("property", classOf[String])
     model.addColumn("value", classOf[Object])
+    do {
+      val c = peer.getColumnModel().getColumn(0)
+      c.setMinWidth(32)
+      c.setMaxWidth(32)
+    } while (false)
 
     addRow("path", path)
-    def addRow(name: String, value: AnyRef) = model.addRow(Array[AnyRef](name, value))
+    def addRow(name: String, value: AnyRef) = {
+      val n = model.getRowCount() + 1
+      model.addRow(Array[AnyRef](n: java.lang.Integer, name, value))
+    }
   }
 
   def viewer: Component
