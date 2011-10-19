@@ -26,6 +26,17 @@ class SeqFileViewer(sf: SeqFile, val lineSize: Int, val skipBytes: Long) extends
 
 object SeqFileViewer {
   def show(sf: SeqFile, lineSize: Int, skipBytes: Long) = {
+    def findAdd(getClass: => Class[_], className: String): Unit = try {
+      getClass
+    } catch {
+      case _: ClassNotFoundException =>
+        val s = ClassFinder(className).show()
+        println("find ClassPath = " + s)
+        if (s.nonEmpty) conf.addClassPath(s)
+    }
+    findAdd(sf.keyClass, sf.keyClassName)
+    findAdd(sf.valClass, sf.valClassName)
+
     val v = new SeqFileViewer(sf, lineSize, skipBytes)
     v.visible = true
     v
