@@ -108,7 +108,7 @@ class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, W
   override def getLines(skipBytes: Long) = lines(skipBytes)
 
   def view: Option[PathViewer] = view()
-  def view(size: Int = Path.HEAD_DEFAULT_SIZE, skipBytes: Long = 0): Option[PathViewer] =
+  def view(size: Int = Path.VIEW_DEFAULT_SIZE, skipBytes: Long = 0): Option[PathViewer] =
     Some(SeqFileViewer.show(this, size, skipBytes))
 
   def lines[K <: Writable, V <: Writable](skipBytes: Long = 0): Iterator[(K, V)] with Closeable = {

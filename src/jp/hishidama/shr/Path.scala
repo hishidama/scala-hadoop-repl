@@ -63,7 +63,7 @@ class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
   override def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = asSeqFileOption.getOrElse(this).doTail(size, skipBytes)
 
   def view: Option[PathViewer] = view()
-  def view(size: Int = Path.HEAD_DEFAULT_SIZE, skipBytes: Long = 0): Option[PathViewer] = this match {
+  def view(size: Int = Path.VIEW_DEFAULT_SIZE, skipBytes: Long = 0): Option[PathViewer] = this match {
     case d if d.isDirectory => Some(DirViewer.show(this))
     case f if f.isFile =>
       val sf = f.asSeqFile
@@ -223,6 +223,7 @@ object Path {
   var HEAD_DEFAULT_SIZE = 10
   var TAIL_DEFAULT_SIZE = 10
   var MORE_DEFAULT_SIZE = 100
+  var VIEW_DEFAULT_SIZE = 100
 }
 
 trait LocalPath {

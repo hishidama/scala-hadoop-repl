@@ -31,8 +31,10 @@ object SeqFileViewer {
     } catch {
       case _: ClassNotFoundException =>
         val s = ClassFinder(className).show()
-        println("find ClassPath = " + s)
-        if (s.nonEmpty) conf.addClassPath(s)
+        if (s.nonEmpty) {
+          println("add ClassPath = " + s)
+          conf.addClassPath(s)
+        }
     }
     findAdd(sf.keyClass, sf.keyClassName)
     findAdd(sf.valClass, sf.valClassName)

@@ -3,6 +3,7 @@ package jp.hishidama.shr
 import java.io.{ File => JFile }
 import java.net.URL
 import java.util.jar.JarFile
+import scala.collection.mutable.ListBuffer
 
 object ClassUtil {
   import scala.collection.JavaConverters._
@@ -19,15 +20,27 @@ object ClassUtil {
     findFromFileSystem(className, f)
   }
   def findFromFileSystem(className: String, dir: JFile): Seq[JFile] = {
+    val seq = ListBuffer[JFile]()
+    findFromFileSystem(className, dir, false, _ => {}, (f: JFile) => synchronized { seq += f })
+    seq.toSeq
+  }
+
+  def findFromFileSystem(className: String, dir: JFile, isStop: => Boolean, progress: JFile => Any, found: JFile => Any) {
     val fname = classFileName(className)
-    def find(f: JFile): Seq[JFile] = {
-      if (f.isDirectory()) {
-        val fs = f.listFiles()
-        if (fs ne null) fs.map(find(_)).fold(Seq.empty)(_ ++ _)
-        else Seq()
-      } else {
-        if (existsInJar(fname, f)) Seq(f)
-        else Seq()
+    def find(f: JFile) {
+      if (!isStop) {
+        if (f.isDirectory()) {
+          progress(f)
+          val fs = f.listFiles()
+          if (fs ne null) fs.foreach(find)
+        } else {
+          if (isJar(f)) {
+            progress(f)
+            if (existClass(fname, f)) {
+              found(f)
+            }
+          }
+        }
       }
     }
     find(dir)
@@ -41,10 +54,17 @@ object ClassUtil {
   }
 
   def existsInJar(fname: String, file: JFile): Boolean = {
-    if (file.isFile() && file.getName().endsWith(".jar")) try {
-      val jf = new JarFile(file)
-      jf.getEntry(fname) ne null
-    } catch { case _ => false }
-    else false
+    if (isJar(file)) existClass(fname, file) else false
+  }
+
+  def isJar(f: JFile): Boolean = {
+    f.isFile() && f.getName().endsWith(".jar")
+  }
+
+  def existClass(fname: String, f: JFile): Boolean = try {
+    val jf = new JarFile(f)
+    jf.getEntry(fname) ne null
+  } catch {
+    case _ => false
   }
 }
