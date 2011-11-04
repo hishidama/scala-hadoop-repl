@@ -62,14 +62,13 @@ class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
   override def tail: Unit = tail()
   override def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = asSeqFileOption.getOrElse(this).doTail(size, skipBytes)
 
-  def view: Option[PathViewer] = view()
-  def view(size: Int = Path.VIEW_DEFAULT_SIZE, skipBytes: Long = 0): Option[PathViewer] = this match {
-    case d if d.isDirectory => Some(DirViewer.show(this))
+  def view: PathViewer = view()
+  def view(size: Int = Path.VIEW_DEFAULT_SIZE, skipBytes: Long = 0): PathViewer = this match {
+    case d if d.isDirectory => DirViewer.show(this)
     case f if f.isFile =>
       val sf = f.asSeqFile
       if (sf.isSequenceFile) sf.view(size, skipBytes)
-      else Some(TextViewer.show(this, size, skipBytes))
-    case _ => None
+      else TextViewer.show(this, size, skipBytes)
   }
 
   def lines(skipBytes: Long = 0) = openReader(skipBytes = skipBytes)
