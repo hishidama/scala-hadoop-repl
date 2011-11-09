@@ -64,6 +64,7 @@ class DirViewer(path: Path) extends PathViewer(path) {
     model.addColumn("size", classOf[java.lang.Long])
     model.addColumn("replication", classOf[java.lang.Short])
     model.addColumn("modify", classOf[java.lang.String])
+    val COL_NAME = 1
 
     val columnModel = peer.getColumnModel()
     columnModel.getColumn(0).setPreferredWidth(32)
@@ -88,6 +89,16 @@ class DirViewer(path: Path) extends PathViewer(path) {
       removeRows()
       val list = fs.getPath().listStatus.filterNot(_.isDir).sortBy(_.getPath().getName())
       list.foreach(addRow)
+    }
+
+    selection.intervalMode = Table.IntervalMode.MultiInterval
+    selection.elementMode = Table.ElementMode.Cell
+
+    protected override def editor(row: Int, column: Int) = {
+      viewToModelColumn(column) match {
+        case COL_NAME => super.editor(row, column)
+        case _ => null
+      }
     }
   }
 }
