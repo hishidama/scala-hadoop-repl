@@ -40,7 +40,7 @@ object SeqFileViewer {
     findAdd(sf.valClass, sf.valClassName)
 
     val v = new SeqFileViewer(sf, lineSize, skipBytes)
-    v.visible = true
+    v.open()
     v
   }
 }

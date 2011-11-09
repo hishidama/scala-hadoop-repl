@@ -22,7 +22,7 @@ class TextViewer(path: Path, val lineSize: Int, val skipBytes: Long) extends Pat
 object TextViewer {
   def show(path: Path, lineSize: Int, skipBytes: Long) = {
     val v = new TextViewer(path, lineSize, skipBytes)
-    v.visible = true
+    v.open()
     v
   }
 }
