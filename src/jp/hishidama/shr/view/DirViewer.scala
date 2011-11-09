@@ -6,6 +6,8 @@ import jp.hishidama.swing.tree.{ LazyTree, LazyTreeNode }
 import jp.hishidama.scala_swing.RowSortTable
 import jp.hishidama.shr._
 import java.text.SimpleDateFormat
+import scala.swing.event.MouseClicked
+import scala.collection.mutable.ArrayBuffer
 
 class DirViewer(path: Path) extends PathViewer(path) {
   override lazy val viewerName = "DirViewer"
@@ -72,14 +74,23 @@ class DirViewer(path: Path) extends PathViewer(path) {
     columnModel.getColumn(3).setPreferredWidth(32)
     columnModel.getColumn(4).setPreferredWidth(128)
 
+    val fsList = ArrayBuffer[FileStatus]()
+
     val sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
-    def addRow(fs: FileStatus) = model.addRow(Array[AnyRef](
-      (model.getRowCount() + 1): java.lang.Integer,
-      fs.getPath().getName(),
-      fs.getLen(): java.lang.Long,
-      fs.getReplication(): java.lang.Short,
-      sdf.format(new java.util.Date(fs.getModificationTime()))))
+    def addRow(fs: FileStatus) = {
+      fsList += fs
+      model.addRow(Array[AnyRef](
+        (model.getRowCount() + 1): java.lang.Integer,
+        fs.getPath().getName(),
+        fs.getLen(): java.lang.Long,
+        fs.getReplication(): java.lang.Short,
+        sdf.format(new java.util.Date(fs.getModificationTime()))))
+    }
+    def getPath(mr: Int): Path = {
+      fsList(mr).getPath()
+    }
     def removeRows() = {
+      fsList.clear()
       while (model.getRowCount() > 0) {
         model.removeRow(model.getRowCount() - 1)
       }
@@ -100,13 +111,21 @@ class DirViewer(path: Path) extends PathViewer(path) {
         case _ => null
       }
     }
+
+    listenTo(this.mouse.clicks)
+    reactions += {
+      case MouseClicked(source, point, modifiers, clicks, triggersPopup) if clicks == 2 =>
+        val row = viewToModelRow(peer.rowAtPoint(point))
+        val path = getPath(row)
+        scala.concurrent.ops.spawn { path.view }
+    }
   }
 }
 
 object DirViewer {
   def show(path: Path) = {
     val v = new DirViewer(path)
-    v.visible = true
+    v.open()
     v
   }
 }
