@@ -32,7 +32,7 @@ object SeqFileViewer {
       case _: ClassNotFoundException =>
         val s = ClassFinder(className).show()
         if (s.nonEmpty) {
-          println("add ClassPath = " + s)
+          println("//INFO conf.addClassPath" + s.map(_.toString.replace("\\", "/")).mkString("(\"", "\", \"", "\")"))
           conf.addClassPath(s)
         }
     }
