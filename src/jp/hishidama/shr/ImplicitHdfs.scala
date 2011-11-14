@@ -2,6 +2,8 @@ package jp.hishidama.shr
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
+import org.apache.hadoop.hdfs._
+import org.apache.hadoop.hdfs.protocol.DatanodeInfo
 
 trait ImplicitHdfs {
 
@@ -16,5 +18,11 @@ trait ImplicitHdfs {
   class FileSystemLike(fs: FileSystem) {
     def conf = fs.getConf()
     def conf_=(c: Configuration) = fs.setConf(c)
+
+    def dataNodeStats(): Array[DatanodeInfo] = this match {
+      case fs: DistributedFileSystem => fs.getDataNodeStats()
+      case fs: ChecksumDistributedFileSystem => fs.getDataNodeStats()
+      case _ => Array()
+    }
   }
 }
