@@ -19,7 +19,7 @@ trait ImplicitHdfs {
     def conf = fs.getConf()
     def conf_=(c: Configuration) = fs.setConf(c)
 
-    def dataNodeStats(): Array[DatanodeInfo] = this match {
+    def dataNodeStats(): Array[DatanodeInfo] = fs match {
       case fs: DistributedFileSystem => fs.getDataNodeStats()
       case fs: ChecksumDistributedFileSystem => fs.getDataNodeStats()
       case _ => Array()
