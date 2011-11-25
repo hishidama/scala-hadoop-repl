@@ -1,7 +1,7 @@
 package jp.hishidama.shr
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus }
+import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus, FileUtil }
 import java.io._
 import java.lang.Comparable
 import java.net.URI
@@ -122,12 +122,8 @@ class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
   }
   def openOutputStream() = fs.create(hpath)
 
-  def copy(dst: Path) = {
-    if (isLocal) {
-      fs.copyFromLocalFile(hpath, dst.hpath)
-    } else {
-      fs.copyToLocalFile(hpath, dst.hpath)
-    }
+  def copy(dst: Path): Boolean = {
+    FileUtil.copy(fs, hpath, dst.fs, dst.hpath, false, fs.conf)
   }
 
   def merge(name: String, dst: Path): Int = {
