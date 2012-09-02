@@ -1,3 +1,4 @@
+BASEDIR=$(cd $(dirname $0);pwd)
 
 cygwin=false
 case "$(uname)" in
@@ -12,20 +13,25 @@ fi
 export HADOOP_CLASSPATH
 export HADOOP_OPTS=-Dscala.usejavacp=true
 
-SHR_CLASSPATH=shr.jar:$SHR_CLASSPATH
+SHR_CLASSPATH=$BASEDIR/shr.jar:$SHR_CLASSPATH
 if [ "$ASAKUSA_HOME" != "" ]; then
   if $cygwin; then
-    SHR_CLASSPATH+=:$(cygpath -u "$ASAKUSA_HOME")/core/lib/asakusa-runtime.jar
+    _ASAKUSA_HOME=$(cygpath -u "$ASAKUSA_HOME")
   else
-    SHR_CLASSPATH+=:$ASAKUSA_HOME/core/lib/asakusa-runtime.jar
+    _ASAKUSA_HOME=$ASAKUSA_HOME
   fi
+  for j in $_ASAKUSA_HOME/core/lib/asakusa-runtime*.jar $_ASAKUSA_HOME/ext/lib/*.jar
+  do
+    SHR_CLASSPATH+=:$j
+  done
 fi
 if $cygwin; then
   SHR_CLASSPATH=$(cygpath -mp "$SHR_CLASSPATH")
 fi
 
+hadoop scala.tools.nsc.MainGenericRunner -cp "$SHR_CLASSPATH" -Yrepl-sync -i shr.scala
 #hadoop scala.tools.nsc.MainGenericRunner -cp "$SHR_CLASSPATH" -i shr.scala
-hadoop scala.tools.nsc.MainGenericRunner -cp "$SHR_CLASSPATH"
+#hadoop scala.tools.nsc.MainGenericRunner -cp "$SHR_CLASSPATH"
 
 if ! $cygwin; then
   reset
