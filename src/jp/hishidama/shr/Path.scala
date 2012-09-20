@@ -1,13 +1,16 @@
 package jp.hishidama.shr
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus, FileUtil }
 import java.io._
 import java.lang.Comparable
 import java.net.URI
+
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus, FileUtil }
+import org.apache.hadoop.io.Writable
+
 import jp.hishidama.shr.view._
 
-class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
+class Path(val hpath: HPath) extends Comparable[Path] with Show[Serializable] {
   self =>
 
   def parent = Path(hpath.getParent())
@@ -52,15 +55,12 @@ class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
   def listAll: Seq[Path] = listStatus.map(fs => Path(fs.getPath()))
   def listAll(dir: String): Seq[Path] = globStatus(dir).map(fs => Path(fs.getPath()))
 
-  protected override def getPrinter = (s: String) => s
-  protected override def getLines(skipBytes: Long) = lines(skipBytes)
+  protected override def getPrinter = (s: Serializable) => s.toString
+  protected override def getLines(skipBytes: Long) = asFile.lines(skipBytes)
 
-  override def more: Unit = more()
-  override def more(size: Int = Path.MORE_DEFAULT_SIZE, skipBytes: Long = 0) = asSeqFileOption.getOrElse(this).doMore(size, skipBytes)
-  override def head: Unit = head()
-  override def head(size: Int = Path.HEAD_DEFAULT_SIZE): Unit = asSeqFileOption.getOrElse(this).doHead(size)
-  override def tail: Unit = tail()
-  override def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = asSeqFileOption.getOrElse(this).doTail(size, skipBytes)
+  override def doMore(size: Int, skipBytes: Long) = asFile.more(size, skipBytes)
+  override def doHead(size: Int) = asFile.head(size)
+  override def doTail(size: Int, skipBytes: Long) = asFile.tail(size, skipBytes)
 
   def view: PathViewer = view()
   def view(size: Int = Path.VIEW_DEFAULT_SIZE, skipBytes: Long = 0): PathViewer = this match {
@@ -71,56 +71,12 @@ class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
       else TextViewer.show(this, size, skipBytes)
   }
 
-  def lines(skipBytes: Long = 0) = openReader(skipBytes = skipBytes)
-  def openReader(encoding: String = "UTF-8", skipBytes: Long = 0): Iterator[String] with Closeable = {
-    val is = fs.open(hpath)
-    skipBytes match {
-      case 0 =>
-      case n if n > 0 => is.seek(n)
-      case n if n < 0 => val s = size + n; if (s > 0) is.seek(s)
-    }
-    val br = try {
-      new BufferedReader(new InputStreamReader(is, encoding))
-    } catch {
-      case e =>
-        try { is.close() } catch { case _ => }
-        throw e
-    }
-    def read(): String = {
-      val r = br.readLine()
-      if (r == null) { br.close() }
-      r
-    }
-    class ReaderIterator extends Iterator[String] with Closeable {
-      private var s = read()
-      def hasNext: Boolean = s != null
-      def next: String = {
-        val r = s
-        s = read()
-        r
-      }
-      def close() = br.close()
-    }
-    new ReaderIterator()
-  }
-
   def #<(s: String): Unit = {
-    using(openWriter()) { bw =>
+    using(asTextFile.openWriter()) { bw =>
       bw.write(s)
       //bw.write('\n')
     }
   }
-  def openWriter(encoding: String = "UTF-8"): BufferedWriter = {
-    val os = openOutputStream()
-    try {
-      new BufferedWriter(new OutputStreamWriter(os, encoding))
-    } catch {
-      case e =>
-        try { os.close() } catch { case _ => }
-        throw e
-    }
-  }
-  def openOutputStream() = fs.create(hpath)
 
   def copy(dst: Path): Boolean = {
     FileUtil.copy(fs, hpath, dst.fs, dst.hpath, false, fs.conf)
@@ -135,7 +91,7 @@ class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
       case Seq(p) => p.copy(dst); 1
       case ps =>
         val dp = if (dst.isDirectory) Path(dst.hpath, ps.head.name) else dst
-        using(dp.openOutputStream()) { os =>
+        using(dp.asTextFile.openOutputStream()) { os =>
           val buf = new Array[Byte](Path.BUFFER_SIZE)
           ps.foreach { p =>
             using(fs.open(p)) { is =>
@@ -192,11 +148,13 @@ class Path(val hpath: HPath) extends Comparable[Path] with Show[String] {
     resolve(hpath, name.split("/").toList)
   }
 
-  def asSeqFile = SeqFile(this)
-  def asSeqFileOption: Option[SeqFile] = {
-    val sf = if (isFile) SeqFile(this) else null
+  def asSeqFile[K <: Writable, V <: Writable] = SeqFile[K, V](this)
+  def asSeqFileOption[K <: Writable, V <: Writable]: Option[SeqFile[K, V]] = {
+    val sf = if (isFile) SeqFile[K, V](this) else null
     if ((sf ne null) && sf.isSequenceFile) Some(sf) else None
   }
+  def asTextFile = TextFile(this)
+  def asFile = asSeqFileOption.getOrElse(asTextFile)
 }
 
 object Path {

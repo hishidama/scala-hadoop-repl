@@ -1,4 +1,5 @@
 package jp.hishidama.shr
+
 import java.io.Closeable
 
 trait Show[A] {
@@ -15,7 +16,10 @@ trait Show[A] {
   def tail: Unit = tail()
   def tail(size: Int = Path.TAIL_DEFAULT_SIZE, skipBytes: Long = 0): Unit = doTail(size, skipBytes)
 
-  def doMore(size: Int, skipBytes: Long): Unit = {
+  def lines: Iterator[A] with Closeable = lines()
+  def lines(skipBytes: Long = 0): Iterator[A] with Closeable = getLines(skipBytes)
+
+  protected def doMore(size: Int, skipBytes: Long): Unit = {
     using(getLines(skipBytes)) { r =>
       val conv = getPrinter
 
@@ -44,14 +48,14 @@ trait Show[A] {
     }
   }
 
-  def doHead(size: Int): Unit = {
+  protected def doHead(size: Int): Unit = {
     using(getLines(0)) { r =>
       val conv = getPrinter
       r.take(size).foreach(s => println(conv(s)))
     }
   }
 
-  def doTail(size: Int, skipBytes: Long): Unit = {
+  protected def doTail(size: Int, skipBytes: Long): Unit = {
     using(getLines(skipBytes)) { r =>
       val conv = getPrinter
       r.toIterable.takeRight(size).foreach(s => println(conv(s)))

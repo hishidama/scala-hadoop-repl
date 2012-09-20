@@ -1,15 +1,17 @@
 package jp.hishidama.shr
 
+import java.io.{ File => JFile, Closeable }
+
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{ Path => HPath, FileSystem, FileStatus }
 import org.apache.hadoop.io.{ Writable, UTF8, Text, NullWritable }
 import org.apache.hadoop.io.{ SequenceFile => HSeqFile }
 import org.apache.hadoop.io.SequenceFile.{ Metadata, CompressionType }
 import org.apache.hadoop.io.compress.{ CompressionCodec, DefaultCodec }
-import java.io.{ File => JFile, Closeable }
+
 import jp.hishidama.shr.view._
 
-class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, Writable)] {
+class SeqFile[K <: Writable, V <: Writable](val path: Path, val conf: Configuration) extends Show[(K, V)] {
   import SeqFile._
 
   private var _sequenceHeader = false
@@ -101,25 +103,24 @@ class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, W
   }
 
   override def getPrinter = {
-    val kf = keyToString[Writable]
-    val vf = valToString[Writable]
-    (s: (Writable, Writable)) => (kf(s._1), vf(s._2)).toString
+    val kf = keyToString[K]
+    val vf = valToString[V]
+    (s: (K, V)) => (kf(s._1), vf(s._2)).toString
   }
-  override def getLines(skipBytes: Long) = lines(skipBytes)
-
-  def view: PathViewer = view()
-  def view(size: Int = Path.VIEW_DEFAULT_SIZE, skipBytes: Long = 0): PathViewer =
-    SeqFileViewer.show(this, size, skipBytes)
-
-  def lines[K <: Writable, V <: Writable](skipBytes: Long = 0): Iterator[(K, V)] with Closeable = {
+  override def getLines(skipBytes: Long): Iterator[(K, V)] with Closeable = {
     lines(
       getCreator(keyClass.asInstanceOf[Class[K]])(),
       getCreator(valClass.asInstanceOf[Class[V]])(),
       skipBytes)
   }
-  def lines[K <: Writable, V <: Writable](keyCreator: => K, valCreator: => V): Iterator[(K, V)] with Closeable =
+
+  def view: PathViewer = view()
+  def view(size: Int = Path.VIEW_DEFAULT_SIZE, skipBytes: Long = 0): PathViewer =
+    SeqFileViewer.show(this, size, skipBytes)
+
+  def lines(keyCreator: => K, valCreator: => V): Iterator[(K, V)] with Closeable =
     lines(keyCreator, valCreator, 0)
-  def lines[K <: Writable, V <: Writable](keyCreator: => K, valCreator: => V, skipBytes: Long): Iterator[(K, V)] with Closeable = {
+  def lines(keyCreator: => K, valCreator: => V, skipBytes: Long): Iterator[(K, V)] with Closeable = {
     val reader = openReader(skipBytes)
     def read(): (Boolean, K, V) = {
       val k = keyCreator
@@ -198,8 +199,8 @@ class SeqFile(val path: Path, val conf: Configuration) extends Show[(Writable, W
 }
 
 object SeqFile {
-  def apply(file: Path) = new SeqFile(file, conf)
-  def apply(file: Path, c: Configuration) = new SeqFile(file, c)
+  def apply[K <: Writable, V <: Writable](file: Path) = new SeqFile[K, V](file, conf)
+  def apply[K <: Writable, V <: Writable](file: Path, c: Configuration) = new SeqFile[K, V](file, c)
 
   val BLOCK_COMPRESS_VERSION = 4: Byte
   val CUSTOM_COMPRESS_VERSION = 5: Byte
