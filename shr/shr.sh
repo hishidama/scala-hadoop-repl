@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+# usage: http://www.ne.jp/asahi/hishidama/home/tech/soft/scala/shr.html
+
 BASEDIR=$(cd $(dirname $0);pwd)
 
 cygwin=false
@@ -33,6 +36,8 @@ hadoop scala.tools.nsc.MainGenericRunner -cp "$SHR_CLASSPATH" -Yrepl-sync -i shr
 #hadoop scala.tools.nsc.MainGenericRunner -cp "$SHR_CLASSPATH" -i shr.scala
 #hadoop scala.tools.nsc.MainGenericRunner -cp "$SHR_CLASSPATH"
 
-if ! $cygwin; then
-  reset
+if [ $? -eq 0 ]; then
+  if ! $cygwin; then
+    reset
+  fi
 fi
